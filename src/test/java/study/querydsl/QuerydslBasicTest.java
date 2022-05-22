@@ -1,7 +1,7 @@
 package study.querydsl;
 
-import com.querydsl.core.QueryResults;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,21 +13,16 @@ import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
 
-import java.util.List;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static study.querydsl.entity.QMember.member;
-
 @SpringBootTest
 @Transactional
 public class QuerydslBasicTest {
 
-    @Autowired
-    EntityManager em;
-    JPAQueryFactory queryFactory = new JPAQueryFactory(em);
+    @Autowired EntityManager em;
+
+    JPAQueryFactory queryFactory;
 
     @BeforeEach
-    public void before() {
+    public void before(){
         Team teamA = new Team("teamA");
         Team teamB = new Team("teamB");
         em.persist(teamA);
@@ -44,79 +39,30 @@ public class QuerydslBasicTest {
     }
 
     @Test
-    public void startJPQL() {
+    public void startJPQL(){
+        //member1을 찾아라
+        String qlString =
+                "select m from Member m" +
+                " where m.username = : username";
 
-        //member1을 찾아라.
-        String qlString = "select m from Member m " + "where m.username = :username";
         Member findMember = em.createQuery(qlString, Member.class)
                 .setParameter("username", "member1")
                 .getSingleResult();
-        assertThat(findMember.getUsername()).isEqualTo("member1");
+
+        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
     @Test
-    public void startQuerydsl() {
-
-        //member1을 찾아라.
+    public void startQuerydsl(){
+        queryFactory = new JPAQueryFactory(em);
         QMember m = new QMember("m");
+
         Member findMember = queryFactory
                 .select(m)
                 .from(m)
-                .where(m.username.eq("member1"))//파라미터 바인딩 처리
+                .where(m.username.eq("member1"))
                 .fetchOne();
 
-        assertThat(findMember.getUsername()).isEqualTo("member1");
-    }
-
-    @Test
-    public void search() {
-        Member findMember = queryFactory
-                .selectFrom(member)
-                .where(member.username.eq("member1").and(member.age.eq(10)))
-                .fetchOne();
-
-        assertThat(findMember.getUsername()).isEqualTo("member1");
-    }
-
-    @Test
-    public void searchAndParam() {
-        List<Member> result1 = queryFactory .selectFrom(member)
-                .where(
-                        member.username.eq("member1")
-                        , member.age.eq(10)
-                )
-                .fetch();
-
-        assertThat(result1.size()).isEqualTo(1);
-    }
-
-    @Test
-    public void resultFetch(){
-
-        //List
-        List<Member> fetch = queryFactory
-                .selectFrom(member)
-                .fetch();
-
-        //단 건
-        Member findMember1 = queryFactory
-                .selectFrom(member)
-                .fetchOne();
-
-        //처음 한 건 조회
-        Member findMember2 = queryFactory
-                .selectFrom(member)
-                .fetchFirst();
-
-        //페이징에서 사용
-        QueryResults<Member> results = queryFactory
-                .selectFrom(member)
-                .fetchResults();
-
-        //count 쿼리로 변경
-        long count = queryFactory
-                .selectFrom(member)
-                .fetchCount();
-
+        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 }
