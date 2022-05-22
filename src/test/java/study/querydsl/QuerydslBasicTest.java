@@ -131,4 +131,19 @@ public class QuerydslBasicTest {
         Assertions.assertThat(member6.getUsername()).isEqualTo("member6");
         Assertions.assertThat(memberNull.getUsername()).isNull();
     }
+
+    @Test
+    public void paging1(){
+        QueryResults<Member> results = queryFactory
+                .selectFrom(member)
+                .orderBy(member.username.desc())
+                .offset(1)
+                .limit(2)
+                .fetchResults();
+
+        Assertions.assertThat(results.getTotal()).isEqualTo(4);
+        Assertions.assertThat(results.getLimit()).isEqualTo(2);
+        Assertions.assertThat(results.getOffset()).isEqualTo(1);
+        Assertions.assertThat(results.getResults().size()).isEqualTo(2);
+    }
 }
