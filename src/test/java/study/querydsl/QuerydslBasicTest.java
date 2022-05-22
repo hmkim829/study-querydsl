@@ -18,6 +18,7 @@ import javax.persistence.EntityManager;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.entity.QMember.*;
 import static study.querydsl.entity.QTeam.*;
 
@@ -60,7 +61,7 @@ public class QuerydslBasicTest {
                 .setParameter("username", "member1")
                 .getSingleResult();
 
-        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
     @Test
@@ -72,7 +73,7 @@ public class QuerydslBasicTest {
                 .where(member.username.eq("member1"))
                 .fetchOne();
 
-        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
     @Test
@@ -85,7 +86,7 @@ public class QuerydslBasicTest {
                 )
                 .fetchOne();
 
-        Assertions.assertThat(findMember.getUsername()).isEqualTo("member1");
+        assertThat(findMember.getUsername()).isEqualTo("member1");
     }
 
     @Test
@@ -130,9 +131,9 @@ public class QuerydslBasicTest {
         Member member5 = result.get(0);
         Member member6 = result.get(1);
         Member memberNull = result.get(2);
-        Assertions.assertThat(member5.getUsername()).isEqualTo("member5");
-        Assertions.assertThat(member6.getUsername()).isEqualTo("member6");
-        Assertions.assertThat(memberNull.getUsername()).isNull();
+        assertThat(member5.getUsername()).isEqualTo("member5");
+        assertThat(member6.getUsername()).isEqualTo("member6");
+        assertThat(memberNull.getUsername()).isNull();
     }
 
     @Test
@@ -144,10 +145,10 @@ public class QuerydslBasicTest {
                 .limit(2)
                 .fetchResults();
 
-        Assertions.assertThat(results.getTotal()).isEqualTo(4);
-        Assertions.assertThat(results.getLimit()).isEqualTo(2);
-        Assertions.assertThat(results.getOffset()).isEqualTo(1);
-        Assertions.assertThat(results.getResults().size()).isEqualTo(2);
+        assertThat(results.getTotal()).isEqualTo(4);
+        assertThat(results.getLimit()).isEqualTo(2);
+        assertThat(results.getOffset()).isEqualTo(1);
+        assertThat(results.getResults().size()).isEqualTo(2);
     }
 
     @Test
@@ -164,11 +165,11 @@ public class QuerydslBasicTest {
                 .fetch();
 
         Tuple tuple = result.get(0);
-        Assertions.assertThat(tuple.get(member.count())).isEqualTo(4);
-        Assertions.assertThat(tuple.get(member.age.sum())).isEqualTo(100);
-        Assertions.assertThat(tuple.get(member.age.avg())).isEqualTo(25);
-        Assertions.assertThat(tuple.get(member.age.max())).isEqualTo(40);
-        Assertions.assertThat(tuple.get(member.age.min())).isEqualTo(10);
+        assertThat(tuple.get(member.count())).isEqualTo(4);
+        assertThat(tuple.get(member.age.sum())).isEqualTo(100);
+        assertThat(tuple.get(member.age.avg())).isEqualTo(25);
+        assertThat(tuple.get(member.age.max())).isEqualTo(40);
+        assertThat(tuple.get(member.age.min())).isEqualTo(10);
     }
 
     @Test
@@ -184,10 +185,39 @@ public class QuerydslBasicTest {
         Tuple teamA = result.get(0);
         Tuple teamB = result.get(1);
 
-        Assertions.assertThat(teamA.get(team.name)).isEqualTo("teamA");
-        Assertions.assertThat(teamA.get(member.age.avg())).isEqualTo(15);
+        assertThat(teamA.get(team.name)).isEqualTo("teamA");
+        assertThat(teamA.get(member.age.avg())).isEqualTo(15);
 
-        Assertions.assertThat(teamB.get(team.name)).isEqualTo("teamB");
-        Assertions.assertThat(teamB.get(member.age.avg())).isEqualTo(35);
+        assertThat(teamB.get(team.name)).isEqualTo("teamB");
+        assertThat(teamB.get(member.age.avg())).isEqualTo(35);
+    }
+
+    @Test
+    public void join(){
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .join(member.team, team)
+                .where(team.name.eq("teamA"))
+                .fetch();
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("member1", "member2");
+    }
+
+    @Test
+    public void theta_join(){
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        List<Member> result = queryFactory
+                .select(member)
+                .from(member, team)
+                .where(member.username.eq(team.name))
+                .fetch();
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("teamA", "teamB");
     }
 }
